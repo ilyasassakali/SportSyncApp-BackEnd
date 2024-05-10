@@ -7,6 +7,10 @@ const bcrypt = require("bcrypt");
 router.post("/create-account", async (req, res) => {
   const { firstName, lastName, email, password } = req.body;
 
+  if (!firstName || !lastName || !email || !password) {
+    return res.status(400).json({ message: "All fields are required" });
+  }
+
   try {
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(password, saltRounds);
@@ -30,6 +34,10 @@ router.post("/create-account", async (req, res) => {
 
 router.post("/login", async (req, res) => {
   const { email, password } = req.body;
+
+  if (!email || !password) {
+    return res.status(400).json({ message: "Email and password are required" });
+  }
 
   try {
     const user = await knex("users").where({ email }).first();
