@@ -14,15 +14,22 @@ router.post("/create-account", async (req, res) => {
   try {
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(password, saltRounds);
+    const result = await knex("users")
+      .insert({
+        firstName,
+        lastName,
+        email,
+        password: hashedPassword,
+      })
+      .returning("*");
 
-    await knex("users").insert({
-      firstName,
-      lastName,
-      email,
-      password: hashedPassword,
-    });
-
-    res.status(201).json({ message: "User created successfully" });
+    if (result.length > 0) {
+      res
+        .status(201)
+        .json({ message: "User created successfully", user: result[0] });
+    } else {
+      res.status(500).json({ message: "Failed to create user" });
+    }
   } catch (error) {
     console.error(error);
     if (error.code === "23505") {
@@ -55,6 +62,31 @@ router.post("/login", async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Error logging in" });
+  }
+});
+
+router.put("/edit-profile", async (req, res) => {
+  const { id, firstName, lastName, email } = req.body;
+
+  if (!id || !firstName || !lastName || !email) {
+    return res.status(400).json({ message: "All fields are required" });
+  }
+
+  try {
+    const emailExists = await knex("users")
+      .where("email", email)
+      .whereNot("id", id)
+      .first();
+    if (emailExists) {
+      return res.status(409).json({ message: "Email already exists" });
+    }
+
+    await knex("users").where({ id }).update({ firstName, lastName, email });
+
+    res.status(200).json({ message: "Profile updated successfully" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error updating profile" });
   }
 });
 
