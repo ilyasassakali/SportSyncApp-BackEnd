@@ -5,11 +5,13 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 const usersRouter = require("./routes/users");
+const eventsRouter = require("./routes/events");
 
 app.use(cors());
 app.use(bodyParser.json());
 
 app.use("/users", usersRouter);
+app.use("/events", eventsRouter);
 
 app.get("/", (req, res) => {
   res.send("Hello World!");
