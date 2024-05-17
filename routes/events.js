@@ -127,4 +127,20 @@ router.get("/event/:id", async (req, res) => {
   }
 });
 
+router.get("/user-events/:userId", async (req, res) => {
+  const { userId } = req.params;
+
+  try {
+    const events = await knex("events")
+      .join("event_users", "events.id", "event_users.eventId")
+      .where("event_users.userId", userId)
+      .select("events.*");
+
+    res.status(200).json(events);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error retrieving user's events" });
+  }
+});
+
 module.exports = router;
