@@ -4,7 +4,7 @@ exports.up = function (knex) {
     table.string("title").notNullable();
     table.string("location").notNullable();
     table.date("date").notNullable();
-    table.time("time").notNullable();
+    table.string("time").notNullable();
     table.integer("numberOfPlayers").notNullable();
     table.boolean("isTeamDistributionEnabled").defaultTo(false);
     table.json("teamDistribution");

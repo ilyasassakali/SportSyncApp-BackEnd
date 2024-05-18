@@ -143,4 +143,17 @@ router.get("/user-events/:userId", async (req, res) => {
   }
 });
 
+router.get("/user/:id", async (req, res) => {
+  const { id } = req.params;
+  try {
+    const user = await knex("users").where({ id }).first();
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    res.json(user);
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching user details", error });
+  }
+});
+
 module.exports = router;
