@@ -15,6 +15,8 @@ router.post("/create-event", async (req, res) => {
     teamColors,
     price,
     hostId,
+    latitude,
+    longitude,
   } = req.body;
 
   if (
@@ -24,7 +26,9 @@ router.post("/create-event", async (req, res) => {
     !time ||
     !numberOfPlayers ||
     !price ||
-    !hostId
+    !hostId ||
+    !latitude ||
+    !longitude
   ) {
     return res.status(400).json({ message: "All fields are required" });
   }
@@ -42,6 +46,8 @@ router.post("/create-event", async (req, res) => {
         teamColors,
         price,
         hostId,
+        latitude,
+        longitude,
       })
       .returning("*");
 

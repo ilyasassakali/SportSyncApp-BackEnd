@@ -3,6 +3,8 @@ exports.up = function (knex) {
     table.increments("id").primary();
     table.string("title").notNullable();
     table.string("location").notNullable();
+    table.decimal("latitude", 10, 7).notNullable();
+    table.decimal("longitude", 10, 7).notNullable();
     table.date("date").notNullable();
     table.string("time").notNullable();
     table.integer("numberOfPlayers").notNullable();
