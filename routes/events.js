@@ -3,6 +3,12 @@ const router = express.Router();
 const knexConfig = require("../knexfile").development;
 const knex = require("knex")(knexConfig);
 
+// Function to generate a 6-digit code
+const generateCode = () => {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+};
+
+// Create an event
 router.post("/create-event", async (req, res) => {
   const {
     title,
@@ -33,6 +39,8 @@ router.post("/create-event", async (req, res) => {
     return res.status(400).json({ message: "All fields are required" });
   }
 
+  const inviteCode = generateCode();
+
   try {
     const event = await knex("events")
       .insert({
@@ -48,6 +56,7 @@ router.post("/create-event", async (req, res) => {
         hostId,
         latitude,
         longitude,
+        inviteCode,
       })
       .returning("*");
 
@@ -68,6 +77,28 @@ router.post("/create-event", async (req, res) => {
   }
 });
 
+// Valid invite code 
+router.post("/validate-invite-code", async (req, res) => {
+  const { inviteCode } = req.body;
+
+  if (!inviteCode) {
+    return res.status(400).json({ message: "Invite code is required" });
+  }
+
+  try {
+    const event = await knex("events").where({ inviteCode }).first();
+    if (!event) {
+      return res.status(404).json({ message: "Invalid invite code" });
+    }
+
+    res.status(200).json({ event });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error validating invite code" });
+  }
+});
+
+// Join an event
 router.post("/join-event", async (req, res) => {
   const { eventId, userId, paymentMethod, shirtColor } = req.body;
 
@@ -105,6 +136,7 @@ router.post("/join-event", async (req, res) => {
   }
 });
 
+// Get more info for specific event
 router.get("/event/:id", async (req, res) => {
   const { id } = req.params;
 
@@ -133,6 +165,7 @@ router.get("/event/:id", async (req, res) => {
   }
 });
 
+// Get all events for specific user
 router.get("/user-events/:userId", async (req, res) => {
   const { userId } = req.params;
 
@@ -149,6 +182,7 @@ router.get("/user-events/:userId", async (req, res) => {
   }
 });
 
+// Get the host for specific event
 router.get("/user/:id", async (req, res) => {
   const { id } = req.params;
   try {

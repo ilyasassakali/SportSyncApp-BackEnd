@@ -12,6 +12,7 @@ exports.up = function (knex) {
     table.json("teamDistribution");
     table.json("teamColors");
     table.decimal("price").notNullable();
+    table.string("inviteCode").unique();
     table.integer("hostId").unsigned().notNullable();
     table
       .foreign("hostId")
