@@ -77,7 +77,7 @@ router.post("/create-event", async (req, res) => {
   }
 });
 
-// Valid invite code 
+// Valid invite code
 router.post("/validate-invite-code", async (req, res) => {
   const { inviteCode } = req.body;
 
@@ -136,7 +136,7 @@ router.post("/join-event", async (req, res) => {
   }
 });
 
-// Get more info for specific event
+// Get all info for specific event with participants list
 router.get("/event/:id", async (req, res) => {
   const { id } = req.params;
 
