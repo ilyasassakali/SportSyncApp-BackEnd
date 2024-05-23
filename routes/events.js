@@ -100,7 +100,7 @@ router.post("/validate-invite-code", async (req, res) => {
 
 // Join an event
 router.post("/join-event", async (req, res) => {
-  const { eventId, userId, paymentMethod, shirtColor } = req.body;
+  const { eventId, userId, paymentMethod } = req.body;
 
   if (!eventId || !userId || !paymentMethod) {
     return res.status(400).json({ message: "All fields are required" });
@@ -114,6 +114,26 @@ router.post("/join-event", async (req, res) => {
       return res
         .status(409)
         .json({ message: "User already joined this event" });
+    }
+
+    const event = await knex("events").where({ id: eventId }).first();
+    const participants = await knex("event_users").where({ eventId });
+
+    // Count the number of participants in each team
+    const teamOneCount = participants.filter(
+      (p) => p.shirtColor === event.teamColors.teamOneColor
+    ).length;
+    const teamTwoCount = participants.filter(
+      (p) => p.shirtColor === event.teamColors.teamTwoColor
+    ).length;
+
+    let shirtColor;
+    if (teamOneCount < event.teamDistribution.teamOne) {
+      shirtColor = event.teamColors.teamOneColor;
+    } else if (teamTwoCount < event.teamDistribution.teamTwo) {
+      shirtColor = event.teamColors.teamTwoColor;
+    } else {
+      return res.status(400).json({ message: "Teams are already full" });
     }
 
     const participant = await knex("event_users")
