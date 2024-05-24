@@ -250,7 +250,7 @@ router.post("/update-participant-color", async (req, res) => {
 });
 
 // Delete event (cancel plan)
-router.delete("/delete-event/:id", async (req, res) => {
+router.put("/cancel-event/:id", async (req, res) => {
   const { id } = req.params;
 
   try {
@@ -259,12 +259,11 @@ router.delete("/delete-event/:id", async (req, res) => {
       return res.status(404).json({ message: "Event not found" });
     }
 
-    await knex("events").where({ id }).del();
-    await knex("event_users").where({ eventId: id }).del();
+    await knex("events").where({ id }).update({ status: "cancelled" });
 
     res.status(200).json({ message: "Event cancelled successfully" });
   } catch (error) {
-    console.error("Error deleting event:", error);
+    console.error("Error cancelling event:", error);
     res.status(500).json({ message: "Server error" });
   }
 });
