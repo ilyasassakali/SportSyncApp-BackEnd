@@ -269,4 +269,34 @@ router.delete("/delete-event/:id", async (req, res) => {
   }
 });
 
+// Leave event
+router.post("/leave-event", async (req, res) => {
+  const { eventId, userId } = req.body;
+
+  if (!eventId || !userId) {
+    return res
+      .status(400)
+      .json({ message: "Event ID and User ID are required" });
+  }
+
+  try {
+    const participant = await knex("event_users")
+      .where({ eventId, userId })
+      .first();
+
+    if (!participant) {
+      return res
+        .status(404)
+        .json({ message: "User is not part of this event" });
+    }
+
+    await knex("event_users").where({ eventId, userId }).del();
+
+    res.status(200).json({ message: "User has left the event successfully" });
+  } catch (error) {
+    console.error("Error leaving event:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 module.exports = router;
