@@ -216,4 +216,37 @@ router.get("/user/:id", async (req, res) => {
   }
 });
 
+// Update participant shirt color
+router.post("/update-participant-color", async (req, res) => {
+  const { eventId, participant1Id, participant2Id } = req.body;
+
+  try {
+    const participant1 = await knex("event_users")
+      .where({ eventId, userId: participant1Id })
+      .first();
+
+    const participant2 = await knex("event_users")
+      .where({ eventId, userId: participant2Id })
+      .first();
+
+    if (!participant1 || !participant2) {
+      return res.status(404).json({ message: "Participant not found" });
+    }
+
+    const tempColor = participant1.shirtColor;
+    await knex("event_users")
+      .where({ eventId, userId: participant1Id })
+      .update({ shirtColor: participant2.shirtColor });
+
+    await knex("event_users")
+      .where({ eventId, userId: participant2Id })
+      .update({ shirtColor: tempColor });
+
+    res.json({ message: "Participant colors updated successfully" });
+  } catch (error) {
+    console.error("Error updating participant colors:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 module.exports = router;
