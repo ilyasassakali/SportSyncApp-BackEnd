@@ -6,12 +6,14 @@ const port = process.env.PORT || 3000;
 
 const usersRouter = require("./routes/users");
 const eventsRouter = require("./routes/events");
+const paymentsRouter = require("./routes/payments");
 
 app.use(cors());
 app.use(bodyParser.json());
 
 app.use("/users", usersRouter);
 app.use("/events", eventsRouter);
+app.use("/payments", paymentsRouter);
 
 app.get("/", (req, res) => {
   res.send("Hello World!");
