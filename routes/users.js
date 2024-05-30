@@ -90,4 +90,23 @@ router.put("/edit-profile", async (req, res) => {
   }
 });
 
+// Save push token
+router.post("/save-push-token", async (req, res) => {
+  const { userId, pushToken } = req.body;
+
+  if (!userId || !pushToken) {
+    return res
+      .status(400)
+      .json({ message: "User ID and push token are required" });
+  }
+
+  try {
+    await knex("users").where({ id: userId }).update({ pushToken });
+    res.status(200).json({ message: "Push token saved successfully" });
+  } catch (error) {
+    console.error("Error saving push token:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 module.exports = router;

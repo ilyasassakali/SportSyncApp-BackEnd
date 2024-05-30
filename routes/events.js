@@ -119,7 +119,6 @@ router.post("/join-event", async (req, res) => {
     const event = await knex("events").where({ id: eventId }).first();
     const participants = await knex("event_users").where({ eventId });
 
-    // Count the number of participants in each team
     const teamOneCount = participants.filter(
       (p) => p.shirtColor === event.teamColors.teamOneColor
     ).length;
@@ -136,22 +135,48 @@ router.post("/join-event", async (req, res) => {
       return res.status(400).json({ message: "Teams are already full" });
     }
 
-    const participant = await knex("event_users")
-      .insert({
-        eventId,
-        userId,
-        paid: paymentMethod === "direct",
-        paymentMethod,
-        shirtColor,
-      })
-      .returning("*");
-
-    res.status(201).json({
-      message: "Joined event successfully",
-      participant: participant[0],
+    await knex("event_users").insert({
+      eventId,
+      userId,
+      paid: paymentMethod === "direct",
+      paymentMethod,
+      shirtColor,
     });
+
+    const participant = await knex("users").where({ id: userId }).first();
+
+    const host = await knex("users").where({ id: event.hostId }).first();
+    const hostPushToken = host.pushToken; 
+
+    const message = {
+      to: hostPushToken,
+      sound: "default",
+      title: "New Guest Joined",
+      body: `${participant.firstName} ${participant.lastName} has joined your event "${event.title}".`,
+    };
+
+    try {
+      const fetch = await import("node-fetch");
+      await fetch.default("https://exp.host/--/api/v2/push/send", {
+        method: "POST",
+        headers: {
+          accept: "application/json",
+          "accept-encoding": "gzip, deflate",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify(message),
+      });
+
+      res.status(201).json({
+        message: "Joined event successfully and notification sent",
+        participant: participant,
+      });
+    } catch (error) {
+      console.error("Error sending notification:", error);
+      res.status(500).json({ message: "Failed to send notification" });
+    }
   } catch (error) {
-    console.error(error);
+    console.error("Error joining event:", error);
     res.status(500).json({ message: "Error joining event" });
   }
 });
