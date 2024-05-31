@@ -153,6 +153,11 @@ router.post("/join-event", async (req, res) => {
       body: `${participant.firstName} ${participant.lastName} has joined your event "${event.title}".`,
     };
 
+    const totalParticipants = await knex("event_users")
+      .where({ eventId })
+      .count("id as count")
+      .first();
+
     res.status(201).json({
       message: "Joined event successfully",
       participant: participant,
@@ -171,6 +176,28 @@ router.post("/join-event", async (req, res) => {
           body: JSON.stringify(message),
         })
         .catch((error) => console.error("Error sending notification:", error));
+
+      if (totalParticipants.count >= event.numberOfPlayers) {
+        const fullMessage = {
+          to: hostPushToken,
+          sound: "default",
+          title: "Event Full",
+          body: `Your event "${event.title}" is now full.`,
+        };
+        fetch
+          .default("https://exp.host/--/api/v2/push/send", {
+            method: "POST",
+            headers: {
+              accept: "application/json",
+              "accept-encoding": "gzip, deflate",
+              "content-type": "application/json",
+            },
+            body: JSON.stringify(fullMessage),
+          })
+          .catch((error) =>
+            console.error("Error sending full event notification:", error)
+          );
+      }
     } catch (error) {
       console.error("Error initializing fetch:", error);
     }
