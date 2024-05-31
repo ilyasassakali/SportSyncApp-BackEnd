@@ -4,8 +4,19 @@ const knexConfig = require("../knexfile").development;
 const knex = require("knex")(knexConfig);
 
 // Function to generate a 6-digit code
-const generateCode = () => {
-  return Math.floor(100000 + Math.random() * 900000).toString();
+const generateUniqueCode = async () => {
+  let isUnique = false;
+  let inviteCode;
+
+  while (!isUnique) {
+    inviteCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const existingEvent = await knex("events").where({ inviteCode }).first();
+    if (!existingEvent) {
+      isUnique = true;
+    }
+  }
+
+  return inviteCode;
 };
 
 // Create an event
@@ -39,7 +50,7 @@ router.post("/create-event", async (req, res) => {
     return res.status(400).json({ message: "All fields are required" });
   }
 
-  const inviteCode = generateCode();
+  const inviteCode = await generateUniqueCode();
 
   try {
     const event = await knex("events")
@@ -297,36 +308,38 @@ router.post("/update-participant-color", async (req, res) => {
 
     const event = await knex("events").where({ id: eventId }).first();
 
-    const participants = await knex("event_users")
-      .where({ eventId })
-      .join("users", "event_users.userId", "users.id")
-      .select("users.pushToken");
+    if (event.status === "active") {
+      const participants = await knex("event_users")
+        .where({ eventId })
+        .join("users", "event_users.userId", "users.id")
+        .select("users.pushToken");
 
-    const colorChangeMessage = {
-      sound: "default",
-      title: "Shirt Color Changed",
-      body: `The shirt colors for event "${event.title}" have been updated.`,
-    };
+      const colorChangeMessage = {
+        sound: "default",
+        title: "Shirt Color Changed",
+        body: `The shirt colors for event "${event.title}" have been updated.`,
+      };
 
-    const fetch = await import("node-fetch");
-    participants.forEach(async (participant) => {
-      if (participant.pushToken) {
-        const message = { ...colorChangeMessage, to: participant.pushToken };
-        fetch
-          .default("https://exp.host/--/api/v2/push/send", {
-            method: "POST",
-            headers: {
-              accept: "application/json",
-              "accept-encoding": "gzip, deflate",
-              "content-type": "application/json",
-            },
-            body: JSON.stringify(message),
-          })
-          .catch((error) =>
-            console.error("Error sending color change notification:", error)
-          );
-      }
-    });
+      const fetch = await import("node-fetch");
+      participants.forEach(async (participant) => {
+        if (participant.pushToken) {
+          const message = { ...colorChangeMessage, to: participant.pushToken };
+          fetch
+            .default("https://exp.host/--/api/v2/push/send", {
+              method: "POST",
+              headers: {
+                accept: "application/json",
+                "accept-encoding": "gzip, deflate",
+                "content-type": "application/json",
+              },
+              body: JSON.stringify(message),
+            })
+            .catch((error) =>
+              console.error("Error sending color change notification:", error)
+            );
+        }
+      });
+    }
   } catch (error) {
     console.error("Error updating participant colors:", error);
     res.status(500).json({ message: "Server error" });
