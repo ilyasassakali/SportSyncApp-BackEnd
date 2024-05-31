@@ -153,25 +153,26 @@ router.post("/join-event", async (req, res) => {
       body: `${participant.firstName} ${participant.lastName} has joined your event "${event.title}".`,
     };
 
+    res.status(201).json({
+      message: "Joined event successfully",
+      participant: participant,
+    });
+
     try {
       const fetch = await import("node-fetch");
-      await fetch.default("https://exp.host/--/api/v2/push/send", {
-        method: "POST",
-        headers: {
-          accept: "application/json",
-          "accept-encoding": "gzip, deflate",
-          "content-type": "application/json",
-        },
-        body: JSON.stringify(message),
-      });
-
-      res.status(201).json({
-        message: "Joined event successfully and notification sent",
-        participant: participant,
-      });
+      fetch
+        .default("https://exp.host/--/api/v2/push/send", {
+          method: "POST",
+          headers: {
+            accept: "application/json",
+            "accept-encoding": "gzip, deflate",
+            "content-type": "application/json",
+          },
+          body: JSON.stringify(message),
+        })
+        .catch((error) => console.error("Error sending notification:", error));
     } catch (error) {
-      console.error("Error sending notification:", error);
-      res.status(500).json({ message: "Failed to send notification" });
+      console.error("Error initializing fetch:", error);
     }
   } catch (error) {
     console.error("Error joining event:", error);
@@ -319,6 +320,10 @@ router.post("/leave-event", async (req, res) => {
     const hostPushToken = host.pushToken;
     const user = await knex("users").where({ id: userId }).first();
 
+    res.status(200).json({
+      message: "You've left the event successfully",
+    });
+
     const message = {
       to: hostPushToken,
       sound: "default",
@@ -328,22 +333,19 @@ router.post("/leave-event", async (req, res) => {
 
     try {
       const fetch = await import("node-fetch");
-      await fetch.default("https://exp.host/--/api/v2/push/send", {
-        method: "POST",
-        headers: {
-          accept: "application/json",
-          "accept-encoding": "gzip, deflate",
-          "content-type": "application/json",
-        },
-        body: JSON.stringify(message),
-      });
-
-      res.status(200).json({
-        message: "You've left the event successfully and the host is notified",
-      });
+      fetch
+        .default("https://exp.host/--/api/v2/push/send", {
+          method: "POST",
+          headers: {
+            accept: "application/json",
+            "accept-encoding": "gzip, deflate",
+            "content-type": "application/json",
+          },
+          body: JSON.stringify(message),
+        })
+        .catch((error) => console.error("Error sending notification:", error));
     } catch (error) {
-      console.error("Error sending notification:", error);
-      res.status(500).json({ message: "Failed to send notification" });
+      console.error("Error initializing fetch:", error);
     }
   } catch (error) {
     console.error("Error leaving event:", error);
