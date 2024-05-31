@@ -313,6 +313,36 @@ router.put("/cancel-event/:id", async (req, res) => {
     await knex("events").where({ id }).update({ status: "cancelled" });
 
     res.status(200).json({ message: "Event cancelled successfully" });
+
+    const participants = await knex("event_users")
+      .where({ eventId: id })
+      .join("users", "event_users.userId", "users.id")
+      .select("users.pushToken");
+    const cancelMessage = {
+      sound: "default",
+      title: "Event Cancelled",
+      body: `The event "${event.title}" has been cancelled by the host.`,
+    };
+
+    const fetch = await import("node-fetch");
+    participants.forEach(async (participant) => {
+      if (participant.pushToken) {
+        const message = { ...cancelMessage, to: participant.pushToken };
+        fetch
+          .default("https://exp.host/--/api/v2/push/send", {
+            method: "POST",
+            headers: {
+              accept: "application/json",
+              "accept-encoding": "gzip, deflate",
+              "content-type": "application/json",
+            },
+            body: JSON.stringify(message),
+          })
+          .catch((error) =>
+            console.error("Error sending cancel notification:", error)
+          );
+      }
+    });
   } catch (error) {
     console.error("Error cancelling event:", error);
     res.status(500).json({ message: "Server error" });
