@@ -111,9 +111,7 @@ router.post("/join-event", async (req, res) => {
       .where({ eventId, userId })
       .first();
     if (existingParticipant) {
-      return res
-        .status(409)
-        .json({ message: "User already joined this event" });
+      return res.status(409).json({ message: "You already joined this event" });
     }
 
     const event = await knex("events").where({ id: eventId }).first();
@@ -146,7 +144,7 @@ router.post("/join-event", async (req, res) => {
     const participant = await knex("users").where({ id: userId }).first();
 
     const host = await knex("users").where({ id: event.hostId }).first();
-    const hostPushToken = host.pushToken; 
+    const hostPushToken = host.pushToken;
 
     const message = {
       to: hostPushToken,
@@ -316,7 +314,37 @@ router.post("/leave-event", async (req, res) => {
 
     await knex("event_users").where({ eventId, userId }).del();
 
-    res.status(200).json({ message: "User has left the event successfully" });
+    const event = await knex("events").where({ id: eventId }).first();
+    const host = await knex("users").where({ id: event.hostId }).first();
+    const hostPushToken = host.pushToken;
+    const user = await knex("users").where({ id: userId }).first();
+
+    const message = {
+      to: hostPushToken,
+      sound: "default",
+      title: "Guest Left Event",
+      body: `${user.firstName} ${user.lastName} has left your event "${event.title}".`,
+    };
+
+    try {
+      const fetch = await import("node-fetch");
+      await fetch.default("https://exp.host/--/api/v2/push/send", {
+        method: "POST",
+        headers: {
+          accept: "application/json",
+          "accept-encoding": "gzip, deflate",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify(message),
+      });
+
+      res.status(200).json({
+        message: "You've left the event successfully and the host is notified",
+      });
+    } catch (error) {
+      console.error("Error sending notification:", error);
+      res.status(500).json({ message: "Failed to send notification" });
+    }
   } catch (error) {
     console.error("Error leaving event:", error);
     res.status(500).json({ message: "Server error" });
