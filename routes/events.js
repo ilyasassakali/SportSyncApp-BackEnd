@@ -358,7 +358,9 @@ router.put("/cancel-event/:id", async (req, res) => {
 
     await knex("events").where({ id }).update({ status: "cancelled" });
 
-    res.status(200).json({ message: "Event cancelled successfully" });
+    res.status(200).json({
+      message: "Event cancelled successfully! The participants are notified",
+    });
 
     const participants = await knex("event_users")
       .where({ eventId: id })
@@ -424,7 +426,7 @@ router.post("/leave-event", async (req, res) => {
     const user = await knex("users").where({ id: userId }).first();
 
     res.status(200).json({
-      message: "You've left the event successfully",
+      message: "You've left the event successfully! The host is notified",
     });
 
     const message = {
